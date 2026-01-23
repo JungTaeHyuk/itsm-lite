@@ -1,0 +1,42 @@
+[
+    {
+        "id": "cat-1",
+        "majorCategory": "하드웨어",
+        "minorCategories": [
+            "PC/노트북",
+            "프린터",
+            "모니터",
+            "주변기기"
+        ]
+    },
+    {
+        "id": "cat-2",
+        "majorCategory": "소프트웨어",
+        "minorCategories": [
+            "OS 설치",
+            "프로그램 설치",
+            "라이선스",
+            "업데이트"
+        ]
+    },
+    {
+        "id": "cat-3",
+        "majorCategory": "네트워크",
+        "minorCategories": [
+            "인터넷 연결",
+            "VPN",
+            "공유폴더",
+            "방화벽"
+        ]
+    },
+    {
+        "id": "cat-4",
+        "majorCategory": "계정/권한",
+        "minorCategories": [
+            "계정 생성",
+            "비밀번호 초기화",
+            "권한 변경",
+            "계정 삭제"
+        ]
+    }
+]

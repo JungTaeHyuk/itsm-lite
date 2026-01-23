@@ -1,0 +1,20 @@
+[
+  {
+    "id": "comment-1769183404652",
+    "requestId": "req-1769183385080",
+    "userId": "admin",
+    "userName": "관리자",
+    "userRole": "admin",
+    "content": "처리 진행합니다.",
+    "createdAt": "2026-01-23T15:50:04.652Z"
+  },
+  {
+    "id": "comment-1769183415490",
+    "requestId": "req-1769183385080",
+    "userId": "admin",
+    "userName": "관리자",
+    "userRole": "admin",
+    "content": "잘 되네요?",
+    "createdAt": "2026-01-23T15:50:15.491Z"
+  }
+]

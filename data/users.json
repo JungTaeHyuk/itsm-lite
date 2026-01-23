@@ -1,0 +1,16 @@
+[
+  {
+    "id": "admin",
+    "email": "admin@itsm.com",
+    "password": "admin123",
+    "name": "관리자",
+    "role": "admin"
+  },
+  {
+    "id": "user1",
+    "email": "user@itsm.com",
+    "password": "user123",
+    "name": "일반 사용자",
+    "role": "user"
+  }
+]

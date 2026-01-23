@@ -1,0 +1,14 @@
+[
+  {
+    "id": "req-1769183385080",
+    "userId": "admin",
+    "userName": "관리자",
+    "majorCategory": "하드웨어",
+    "minorCategory": "PC/노트북",
+    "title": "문의 합니다. ",
+    "description": "문의 합니다. ",
+    "status": "처리완료",
+    "createdAt": "2026-01-23T15:49:45.080Z",
+    "updatedAt": "2026-01-23T15:50:57.641Z"
+  }
+]
