@@ -3,59 +3,38 @@
 import Link from 'next/link';
 import StatusBadge from './StatusBadge';
 
+const formatDate = (d) =>
+    new Date(d).toLocaleDateString('ko-KR', {
+        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+
 export default function RequestCard({ request }) {
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('ko-KR', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
-
     return (
-        <Link href={`/requests/${request.id}`} style={{ textDecoration: 'none' }}>
-            <div className="card animate-fade-in" style={{
-                cursor: 'pointer',
-                marginBottom: 'var(--space-md)'
-            }}>
-                <div className="flex justify-between items-center" style={{ marginBottom: 'var(--space-sm)' }}>
-                    <div className="flex items-center gap-sm">
-                        <StatusBadge status={request.status} />
-                        <span className="text-sm text-secondary">
-                            {request.majorCategory} / {request.minorCategory}
+        <Link href={`/requests/${request.id}`} className="request-card animate-fade-in">
+            <div className="request-card-header">
+                <div className="request-card-meta">
+                    <StatusBadge status={request.status} />
+                    {request.majorCategory && (
+                        <span className="text-xs text-muted">
+                            {request.majorCategory}
+                            {request.minorCategory ? ` / ${request.minorCategory}` : ''}
                         </span>
-                    </div>
-                    <span className="text-sm text-tertiary">
-                        {formatDate(request.createdAt)}
-                    </span>
+                    )}
                 </div>
+                <span className="text-xs text-muted">{formatDate(request.createdAt)}</span>
+            </div>
 
-                <h3 style={{
-                    fontSize: '1.125rem',
-                    marginBottom: 'var(--space-sm)',
-                    color: 'var(--text-primary)'
-                }}>
-                    {request.title}
-                </h3>
+            <div className="request-card-title">{request.title}</div>
 
-                <p className="text-secondary" style={{
-                    fontSize: '0.875rem',
-                    marginBottom: 'var(--space-sm)',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical'
-                }}>
-                    {request.description}
-                </p>
+            {request.description && (
+                <div className="request-card-desc">{request.description}</div>
+            )}
 
-                <div className="text-sm text-tertiary">
-                    요청자: {request.userName}
-                </div>
+            <div className="request-card-footer">
+                <span>👤 {request.userName || '—'}</span>
+                {request.comments?.length > 0 && (
+                    <span>💬 {request.comments.length}</span>
+                )}
             </div>
         </Link>
     );

@@ -2,235 +2,160 @@
 
 import { useState, useEffect, useRef } from 'react';
 
+const ROLE_LABEL = { admin: '관리자', approver: '승인자', handler: '처리자', requester: '현업' };
+const ROLE_COLOR = {
+    admin: 'linear-gradient(135deg,hsl(258,84%,58%),hsl(226,80%,55%))',
+    approver: 'linear-gradient(135deg,hsl(152,68%,40%),hsl(170,60%,35%))',
+    handler: 'linear-gradient(135deg,hsl(200,88%,50%),hsl(220,80%,50%))',
+    requester: 'linear-gradient(135deg,hsl(38,96%,48%),hsl(28,90%,45%))',
+};
+
+const formatTime = (d) => {
+    const diff = Date.now() - new Date(d);
+    const m = Math.floor(diff / 60000);
+    const h = Math.floor(diff / 3600000);
+    const day = Math.floor(diff / 86400000);
+    if (m < 1) return '방금 전';
+    if (m < 60) return `${m}분 전`;
+    if (h < 24) return `${h}시간 전`;
+    if (day < 7) return `${day}일 전`;
+    return new Date(d).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+};
+
 export default function SlackStyleComments({ requestId }) {
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState('');
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
-    const commentsEndRef = useRef(null);
+    const bottomRef = useRef(null);
 
-    useEffect(() => {
-        loadComments();
-    }, [requestId]);
-
-    useEffect(() => {
-        scrollToBottom();
-    }, [comments]);
-
-    const scrollToBottom = () => {
-        commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    };
+    useEffect(() => { loadComments(); }, [requestId]);
+    useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [comments]);
 
     const loadComments = async () => {
         setLoading(true);
         try {
-            const response = await fetch(`/api/requests/${requestId}/comments`);
-            const data = await response.json();
-            if (response.ok) {
-                setComments(data.comments);
-            }
-        } catch (error) {
-            console.error('Failed to load comments:', error);
-        } finally {
-            setLoading(false);
-        }
+            const res = await fetch(`/api/requests/${requestId}/comments`);
+            const data = await res.json();
+            if (res.ok) setComments(data.comments);
+        } catch (e) { console.error(e); }
+        finally { setLoading(false); }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         if (!newComment.trim()) return;
-
         setSubmitting(true);
         try {
-            const response = await fetch(`/api/requests/${requestId}/comments`, {
+            const res = await fetch(`/api/requests/${requestId}/comments`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ content: newComment }),
             });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                setComments([...comments, data.comment]);
-                setNewComment('');
-            }
-        } catch (error) {
-            console.error('Failed to post comment:', error);
-        } finally {
-            setSubmitting(false);
-        }
+            const data = await res.json();
+            if (res.ok) { setComments([...comments, data.comment]); setNewComment(''); }
+        } catch (e) { console.error(e); }
+        finally { setSubmitting(false); }
     };
 
-    const formatTime = (dateString) => {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diff = now - date;
-        const minutes = Math.floor(diff / 60000);
-        const hours = Math.floor(diff / 3600000);
-        const days = Math.floor(diff / 86400000);
-
-        if (minutes < 1) return '방금 전';
-        if (minutes < 60) return `${minutes}분 전`;
-        if (hours < 24) return `${hours}시간 전`;
-        if (days < 7) return `${days}일 전`;
-
-        return date.toLocaleDateString('ko-KR', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
-
-    const getInitials = (name) => {
-        return name.charAt(0).toUpperCase();
-    };
-
-    const getRoleColor = (role) => {
-        return role === 'admin' ? 'var(--primary-500)' : 'var(--gray-500)';
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit(e);
     };
 
     return (
-        <div style={{
-            background: 'var(--bg-secondary)',
-            borderRadius: 'var(--radius-lg)',
-            border: '1px solid var(--glass-border)',
-            overflow: 'hidden'
-        }}>
-            {/* Comments Header */}
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            {/* Header */}
             <div style={{
-                padding: 'var(--space-md) var(--space-lg)',
-                borderBottom: '1px solid var(--glass-border)',
-                background: 'var(--bg-tertiary)'
+                padding: 'var(--sp-4) var(--sp-6)',
+                borderBottom: '1px solid var(--border)',
+                background: 'var(--bg-raised)',
+                display: 'flex', alignItems: 'center', gap: 'var(--sp-3)'
             }}>
-                <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>
-                    댓글 {comments.length}개
-                </h3>
+                <span style={{ fontSize: '1.125rem' }}>💬</span>
+                <span style={{ fontWeight: 700, fontSize: '0.9375rem' }}>댓글</span>
+                <span style={{
+                    marginLeft: 'auto',
+                    fontSize: '0.75rem', fontWeight: 600,
+                    background: 'var(--bg-overlay)', color: 'var(--text-muted)',
+                    padding: '2px 8px', borderRadius: 'var(--r-full)'
+                }}>
+                    {comments.length}개
+                </span>
             </div>
 
-            {/* Comments List */}
-            <div style={{
-                maxHeight: '400px',
-                overflowY: 'auto',
-                padding: 'var(--space-lg)'
-            }}>
+            {/* Comments list */}
+            <div style={{ maxHeight: '420px', overflowY: 'auto', padding: 'var(--sp-5) var(--sp-6)' }}>
                 {loading ? (
-                    <div style={{ textAlign: 'center', padding: 'var(--space-xl)', color: 'var(--text-tertiary)' }}>
-                        로딩 중...
+                    <div style={{ textAlign: 'center', padding: 'var(--sp-8)', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                        <div className="spinner" style={{ margin: '0 auto 12px' }} />
+                        댓글 불러오는 중...
                     </div>
                 ) : comments.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: 'var(--space-xl)', color: 'var(--text-tertiary)' }}>
-                        아직 댓글이 없습니다. 첫 댓글을 작성해보세요!
+                    <div style={{ textAlign: 'center', padding: 'var(--sp-10)', color: 'var(--text-muted)' }}>
+                        <div style={{ fontSize: '2rem', marginBottom: 'var(--sp-3)' }}>💭</div>
+                        <div style={{ fontSize: '0.875rem', fontWeight: 600 }}>아직 댓글이 없습니다</div>
+                        <div style={{ fontSize: '0.8125rem', marginTop: 'var(--sp-1)' }}>첫 댓글을 남겨보세요!</div>
                     </div>
                 ) : (
-                    comments.map((comment, index) => (
-                        <div
-                            key={comment.id}
-                            className="animate-slide-in"
-                            style={{
-                                marginBottom: index < comments.length - 1 ? 'var(--space-lg)' : 0,
-                                animationDelay: `${index * 50}ms`
-                            }}
-                        >
-                            <div className="flex gap-md">
-                                {/* Avatar */}
-                                <div style={{
-                                    width: '36px',
-                                    height: '36px',
-                                    borderRadius: 'var(--radius-md)',
-                                    background: getRoleColor(comment.userRole),
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontWeight: 600,
-                                    fontSize: '0.875rem',
-                                    flexShrink: 0
-                                }}>
-                                    {getInitials(comment.userName)}
+                    <div className="comment-list">
+                        {comments.map((c, i) => (
+                            <div key={c.id} className="comment-item" style={{ animationDelay: `${i * 40}ms` }}>
+                                <div className="comment-avatar" style={{ background: ROLE_COLOR[c.userRole] || ROLE_COLOR.requester }}>
+                                    {c.userName?.slice(0, 2) || '?'}
                                 </div>
-
-                                {/* Comment Content */}
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div className="flex items-center gap-sm" style={{ marginBottom: 'var(--space-xs)' }}>
-                                        <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>
-                                            {comment.userName}
-                                        </span>
-                                        {comment.userRole === 'admin' && (
-                                            <span style={{
-                                                fontSize: '0.625rem',
-                                                padding: '2px 6px',
-                                                background: 'hsla(220, 70%, 48%, 0.15)',
-                                                color: 'var(--primary-400)',
-                                                borderRadius: 'var(--radius-sm)',
-                                                fontWeight: 600,
-                                                textTransform: 'uppercase'
-                                            }}>
-                                                관리자
-                                            </span>
-                                        )}
-                                        <span className="text-tertiary" style={{ fontSize: '0.75rem' }}>
-                                            {formatTime(comment.createdAt)}
-                                        </span>
+                                <div className="comment-bubble">
+                                    <div className="comment-header">
+                                        <div className="flex items-center gap-2">
+                                            <span className="comment-author">{c.userName}</span>
+                                            {c.userRole && (
+                                                <span style={{
+                                                    fontSize: '0.6875rem', fontWeight: 700,
+                                                    padding: '1px 6px', borderRadius: 'var(--r-full)',
+                                                    background: 'var(--bg-overlay)', color: 'var(--text-muted)',
+                                                    textTransform: 'uppercase', letterSpacing: '0.04em'
+                                                }}>
+                                                    {ROLE_LABEL[c.userRole] || c.userRole}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <span className="comment-time">{formatTime(c.createdAt)}</span>
                                     </div>
-
-                                    <div style={{
-                                        fontSize: '0.875rem',
-                                        lineHeight: 1.5,
-                                        color: 'var(--text-primary)',
-                                        whiteSpace: 'pre-wrap',
-                                        wordBreak: 'break-word'
-                                    }}>
-                                        {comment.content}
+                                    <div className="comment-body" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                                        {c.content}
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    ))
+                        ))}
+                    </div>
                 )}
-                <div ref={commentsEndRef} />
+                <div ref={bottomRef} />
             </div>
 
-            {/* Comment Input */}
-            <div style={{
-                padding: 'var(--space-lg)',
-                borderTop: '1px solid var(--glass-border)',
-                background: 'var(--bg-tertiary)'
-            }}>
+            {/* Input */}
+            <div style={{ padding: 'var(--sp-4) var(--sp-6)', borderTop: '1px solid var(--border)', background: 'var(--bg-raised)' }}>
                 <form onSubmit={handleSubmit}>
-                    <div style={{
-                        display: 'flex',
-                        gap: 'var(--space-sm)',
-                        alignItems: 'flex-end'
-                    }}>
-                        <div style={{ flex: 1 }}>
-                            <textarea
-                                value={newComment}
-                                onChange={(e) => setNewComment(e.target.value)}
-                                placeholder="댓글을 입력하세요..."
-                                className="input"
-                                style={{
-                                    minHeight: '80px',
-                                    resize: 'vertical',
-                                    fontFamily: 'inherit'
-                                }}
-                                disabled={submitting}
-                            />
+                    <div style={{ position: 'relative' }}>
+                        <textarea
+                            value={newComment}
+                            onChange={e => setNewComment(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder="댓글을 입력하세요... (Ctrl+Enter로 전송)"
+                            className="input"
+                            style={{ minHeight: '80px', resize: 'none', paddingBottom: '44px' }}
+                            disabled={submitting}
+                        />
+                        <div style={{ position: 'absolute', bottom: 'var(--sp-3)', right: 'var(--sp-3)', display: 'flex', gap: 'var(--sp-2)', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                {newComment.length > 0 && `${newComment.length}자`}
+                            </span>
+                            <button
+                                type="submit"
+                                className="btn btn-primary btn-sm"
+                                disabled={submitting || !newComment.trim()}
+                            >
+                                {submitting ? '전송 중...' : '전송 ↑'}
+                            </button>
                         </div>
-                        <button
-                            type="submit"
-                            className="btn btn-primary"
-                            disabled={submitting || !newComment.trim()}
-                            style={{
-                                height: '40px',
-                                opacity: submitting || !newComment.trim() ? 0.5 : 1
-                            }}
-                        >
-                            {submitting ? '전송 중...' : '전송'}
-                        </button>
                     </div>
                 </form>
             </div>

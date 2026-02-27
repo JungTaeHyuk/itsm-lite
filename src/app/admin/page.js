@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import RequestCard from '@/components/RequestCard';
+import StatusBadge from '@/components/StatusBadge';
 import '../globals.css';
+
+const WORKFLOW = ['요청', '요청승인', '접수', '처리진행', '처리완료', '만족도조사', '종료'];
 
 export default function AdminDashboard() {
     const router = useRouter();
@@ -12,187 +14,184 @@ export default function AdminDashboard() {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
+    const [search, setSearch] = useState('');
 
-    useEffect(() => {
-        checkAuth();
-    }, []);
+    useEffect(() => { checkAuth(); }, []);
 
     const checkAuth = async () => {
         try {
-            const response = await fetch('/api/auth/me');
-            const data = await response.json();
-
-            if (!data.user || data.user.role !== 'admin') {
-                router.push('/dashboard');
-                return;
-            }
-
+            const res = await fetch('/api/auth/me');
+            const data = await res.json();
+            if (!data.user || data.user.role !== 'admin') { router.push('/dashboard'); return; }
             setUser(data.user);
             loadRequests();
-        } catch (error) {
-            console.error('Auth check failed:', error);
-            router.push('/login');
-        }
+        } catch { router.push('/login'); }
     };
 
     const loadRequests = async () => {
         try {
-            const response = await fetch('/api/requests');
-            const data = await response.json();
-
-            if (response.ok) {
-                setRequests(data.requests);
-            }
-        } catch (error) {
-            console.error('Failed to load requests:', error);
-        } finally {
-            setLoading(false);
-        }
+            const res = await fetch('/api/requests');
+            const data = await res.json();
+            if (res.ok) setRequests(data.requests);
+        } catch (e) { console.error(e); }
+        finally { setLoading(false); }
     };
 
-    if (loading || !user) {
-        return (
-            <div style={{
-                minHeight: '100vh',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-            }}>
-                <div className="text-secondary">로딩 중...</div>
-            </div>
-        );
-    }
-
-    const getStatusCounts = () => {
-        return {
-            total: requests.length,
-            pending: requests.filter(r => r.status === '접수').length,
-            inProgress: requests.filter(r => r.status === '처리진행').length,
-            completed: requests.filter(r => r.status === '처리완료').length
-        };
+    const handleLogout = async () => {
+        await fetch('/api/auth/logout', { method: 'POST' });
+        router.push('/login');
     };
 
-    const getFilteredRequests = () => {
-        if (filter === 'all') return requests;
-        return requests.filter(r => r.status === filter);
-    };
+    if (loading || !user) return <div className="loading-center"><div className="spinner" /></div>;
 
-    const counts = getStatusCounts();
-    const filteredRequests = getFilteredRequests();
+    const counts = WORKFLOW.reduce((acc, s) => {
+        acc[s] = requests.filter(r => r.status === s).length;
+        return acc;
+    }, { total: requests.length });
+
+    const filteredRequests = requests
+        .filter(r => filter === 'all' || r.status === filter)
+        .filter(r => !search || r.title?.toLowerCase().includes(search.toLowerCase()) || r.userName?.includes(search));
+
+    const formatDate = (d) => new Date(d).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
     return (
-        <div style={{ minHeight: '100vh', paddingBottom: 'var(--space-3xl)' }}>
-            {/* Header */}
-            <div style={{
-                background: 'var(--bg-secondary)',
-                borderBottom: '1px solid var(--glass-border)',
-                padding: 'var(--space-lg) 0'
-            }}>
+        <div className="page-wrapper">
+            {/* Navbar */}
+            <nav className="navbar">
                 <div className="container">
-                    <div className="flex justify-between items-center">
-                        <div>
-                            <h1 style={{
-                                fontSize: '1.5rem',
-                                background: 'linear-gradient(135deg, var(--primary-400), var(--primary-600))',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                                marginBottom: 'var(--space-xs)'
-                            }}>
-                                관리자 대시보드
-                            </h1>
-                            <p className="text-secondary" style={{ fontSize: '0.875rem' }}>
-                                전체 서비스 요청 현황 관리
-                            </p>
+                    <div className="navbar-inner">
+                        <div className="navbar-logo">
+                            <div className="logo-icon">⚡</div>
+                            <span className="logo-text">ITSM Lite</span>
+                            <span style={{
+                                fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase',
+                                letterSpacing: '0.06em', color: 'var(--violet-400)',
+                                background: 'hsla(258,84%,58%,0.12)', padding: '2px 8px',
+                                borderRadius: 'var(--r-full)', border: '1px solid hsla(258,84%,58%,0.25)'
+                            }}>Admin</span>
                         </div>
-                        <Link href="/dashboard" className="btn btn-ghost">
-                            ← 일반 대시보드로
-                        </Link>
-                    </div>
-                </div>
-            </div>
-
-            {/* Stats */}
-            <div className="container" style={{ marginTop: 'var(--space-xl)' }}>
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                    gap: 'var(--space-md)',
-                    marginBottom: 'var(--space-xl)'
-                }}>
-                    <div
-                        className="card"
-                        style={{ cursor: 'pointer', opacity: filter === 'all' ? 1 : 0.6 }}
-                        onClick={() => setFilter('all')}
-                    >
-                        <div className="text-tertiary" style={{ fontSize: '0.75rem', marginBottom: 'var(--space-xs)' }}>
-                            전체 요청
-                        </div>
-                        <div style={{ fontSize: '2rem', fontWeight: 700 }}>{counts.total}</div>
-                    </div>
-                    <div
-                        className="card"
-                        style={{ cursor: 'pointer', opacity: filter === '접수' ? 1 : 0.6 }}
-                        onClick={() => setFilter('접수')}
-                    >
-                        <div className="text-tertiary" style={{ fontSize: '0.75rem', marginBottom: 'var(--space-xs)' }}>
-                            접수
-                        </div>
-                        <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--status-pending)' }}>
-                            {counts.pending}
-                        </div>
-                    </div>
-                    <div
-                        className="card"
-                        style={{ cursor: 'pointer', opacity: filter === '처리진행' ? 1 : 0.6 }}
-                        onClick={() => setFilter('처리진행')}
-                    >
-                        <div className="text-tertiary" style={{ fontSize: '0.75rem', marginBottom: 'var(--space-xs)' }}>
-                            처리진행
-                        </div>
-                        <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--status-in-progress)' }}>
-                            {counts.inProgress}
-                        </div>
-                    </div>
-                    <div
-                        className="card"
-                        style={{ cursor: 'pointer', opacity: filter === '처리완료' ? 1 : 0.6 }}
-                        onClick={() => setFilter('처리완료')}
-                    >
-                        <div className="text-tertiary" style={{ fontSize: '0.75rem', marginBottom: 'var(--space-xs)' }}>
-                            처리완료
-                        </div>
-                        <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--status-completed)' }}>
-                            {counts.completed}
+                        <div className="navbar-right">
+                            <Link href="/dashboard" className="btn btn-ghost btn-sm">← 대시보드</Link>
+                            <button onClick={handleLogout} className="btn btn-ghost btn-sm">로그아웃</button>
                         </div>
                     </div>
                 </div>
+            </nav>
 
-                {/* Filter Info */}
-                <div className="flex justify-between items-center" style={{ marginBottom: 'var(--space-lg)' }}>
-                    <h2 style={{ fontSize: '1.25rem' }}>
-                        {filter === 'all' ? '전체 요청' : `${filter} 요청`} ({filteredRequests.length})
-                    </h2>
-                    {filter !== 'all' && (
-                        <button onClick={() => setFilter('all')} className="btn btn-ghost">
-                            필터 초기화
+            <div className="app-layout container">
+                {/* Sidebar */}
+                <aside className="sidebar">
+                    <div className="sidebar-section">
+                        <div className="sidebar-label">상태 필터</div>
+                        <button className={`sidebar-item${filter === 'all' ? ' active' : ''}`} onClick={() => setFilter('all')}>
+                            <span className="sidebar-item-icon">📊</span> 전체
+                            <span style={{ marginLeft: 'auto', fontSize: '0.75rem', background: 'var(--bg-overlay)', padding: '1px 7px', borderRadius: 'var(--r-full)', color: 'var(--text-muted)' }}>{counts.total}</span>
                         </button>
-                    )}
-                </div>
-
-                {/* Requests List */}
-                {filteredRequests.length === 0 ? (
-                    <div className="card" style={{ textAlign: 'center', padding: 'var(--space-3xl)' }}>
-                        <p className="text-secondary">
-                            {filter === 'all' ? '아직 서비스 요청이 없습니다.' : `${filter} 상태의 요청이 없습니다.`}
-                        </p>
-                    </div>
-                ) : (
-                    <div>
-                        {filteredRequests.map(request => (
-                            <RequestCard key={request.id} request={request} />
+                        {WORKFLOW.map(s => (
+                            <button key={s} className={`sidebar-item${filter === s ? ' active' : ''}`} onClick={() => setFilter(s)}>
+                                <span className="sidebar-item-icon">·</span> {s}
+                                <span style={{ marginLeft: 'auto', fontSize: '0.75rem', background: 'var(--bg-overlay)', padding: '1px 7px', borderRadius: 'var(--r-full)', color: 'var(--text-muted)' }}>{counts[s] || 0}</span>
+                            </button>
                         ))}
                     </div>
-                )}
+                </aside>
+
+                {/* Main */}
+                <main className="main-content">
+                    {/* Page header */}
+                    <div className="page-header flex items-center justify-between">
+                        <div>
+                            <h1 className="page-title">관리자 대시보드</h1>
+                            <p className="page-subtitle">전체 서비스 요청 현황 및 관리</p>
+                        </div>
+                    </div>
+
+                    {/* Stats row */}
+                    <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))' }}>
+                        {[
+                            { label: '전체', value: counts.total, cls: 'stat-total', icon: '📂' },
+                            { label: '요청', value: counts['요청'] || 0, cls: 'stat-pending', icon: '🆕' },
+                            { label: '처리진행', value: counts['처리진행'] || 0, cls: 'stat-progress', icon: '⚙️' },
+                            { label: '처리완료', value: counts['처리완료'] || 0, cls: 'stat-done', icon: '✅' },
+                            { label: '종료', value: counts['종료'] || 0, cls: 'stat-done', icon: '🏁' },
+                        ].map(s => (
+                            <div key={s.label} className={`stat-card ${s.cls}`} onClick={() => setFilter(s.label === '전체' ? 'all' : s.label)} style={{ cursor: 'pointer' }}>
+                                <div className="stat-icon" style={{ fontSize: '1.25rem' }}>{s.icon}</div>
+                                <div className="stat-value" style={{ fontSize: '1.75rem' }}>{s.value}</div>
+                                <div className="stat-label">{s.label}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Search + filter info */}
+                    <div className="flex gap-3 items-center mb-6">
+                        <input
+                            type="text"
+                            className="input"
+                            placeholder="🔍  제목 또는 요청자 검색..."
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            style={{ maxWidth: '360px' }}
+                        />
+                        {filter !== 'all' && (
+                            <button className="btn btn-ghost btn-sm" onClick={() => setFilter('all')}>✕ 필터 해제</button>
+                        )}
+                        <span className="text-sm text-muted" style={{ marginLeft: 'auto' }}>
+                            {filteredRequests.length}건
+                        </span>
+                    </div>
+
+                    {/* Table */}
+                    {filteredRequests.length === 0 ? (
+                        <div className="card">
+                            <div className="empty-state">
+                                <div className="empty-state-icon">📭</div>
+                                <div className="empty-state-title">해당 요청이 없습니다</div>
+                                <div className="empty-state-desc">조건에 맞는 서비스 요청이 없습니다.</div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="table-wrapper">
+                            <table className="table">
+                                <thead>
+                                    <tr>
+                                        <th>상태</th>
+                                        <th>제목</th>
+                                        <th>요청자</th>
+                                        <th>카테고리</th>
+                                        <th>생성일시</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredRequests.map(r => (
+                                        <tr key={r.id}>
+                                            <td><StatusBadge status={r.status} /></td>
+                                            <td>
+                                                <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.875rem' }}>
+                                                    {r.title}
+                                                </span>
+                                            </td>
+                                            <td>{r.userName || '—'}</td>
+                                            <td>
+                                                <span className="text-xs text-muted">
+                                                    {r.majorCategory}{r.minorCategory ? ` / ${r.minorCategory}` : ''}
+                                                </span>
+                                            </td>
+                                            <td className="text-xs text-muted">{formatDate(r.createdAt)}</td>
+                                            <td>
+                                                <Link href={`/requests/${r.id}`} className="btn btn-ghost btn-sm">
+                                                    보기 →
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </main>
             </div>
         </div>
     );
