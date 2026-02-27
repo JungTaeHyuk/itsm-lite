@@ -16,5 +16,14 @@
     "userRole": "admin",
     "content": "잘 되네요?",
     "createdAt": "2026-01-23T15:50:15.491Z"
+  },
+  {
+    "id": "comment-1769390139079",
+    "requestId": "req-1769183385080",
+    "userId": "admin",
+    "userName": "관리자",
+    "userRole": "admin",
+    "content": "허접",
+    "createdAt": "2026-01-26T01:15:39.079Z"
   }
 ]

@@ -10,5 +10,41 @@
     "status": "처리완료",
     "createdAt": "2026-01-23T15:49:45.080Z",
     "updatedAt": "2026-01-23T15:50:57.641Z"
+  },
+  {
+    "id": "req-1769385759218",
+    "userId": "user1",
+    "userName": "일반 사용자",
+    "majorCategory": "하드웨어",
+    "minorCategory": "PC/노트북",
+    "title": "제목",
+    "description": "제목",
+    "status": "접수",
+    "createdAt": "2026-01-26T00:02:39.218Z",
+    "updatedAt": "2026-01-26T00:02:39.218Z"
+  },
+  {
+    "id": "req-1769390014165",
+    "userId": "admin",
+    "userName": "관리자",
+    "majorCategory": "소프트웨어",
+    "minorCategory": "프로그램 설치",
+    "title": "완벽하게 안됨",
+    "description": "완벽하게 안됨",
+    "status": "접수",
+    "createdAt": "2026-01-26T01:13:34.165Z",
+    "updatedAt": "2026-01-26T01:13:34.165Z"
+  },
+  {
+    "id": "req-1771056766618",
+    "userId": "admin",
+    "userName": "관리자",
+    "majorCategory": "하드웨어",
+    "minorCategory": "모니터",
+    "title": "요청제목 정리 ",
+    "description": "잘되나요?",
+    "status": "접수",
+    "createdAt": "2026-02-14T08:12:46.618Z",
+    "updatedAt": "2026-02-14T08:12:46.618Z"
   }
 ]
